@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,29 +10,59 @@
     <div id="game-container">
         <div id="ui-overlay">
             <div id="stats">
-                <div id="health">PV: <span id="health-value">100</span></div>
-                <div id="gold">Or: <span id="gold-value">0</span></div>
+                <div id="health">HP: <span id="health-value">100</span></div>
+                <div id="gold">Gold: <span id="gold-value">0</span></div>
                 <div id="score">Score: <span id="score-value">0</span></div>
-                <div id="timer">Temps: <span id="timer-value">0</span>s</div>
+                <div id="timer">Time: <span id="timer-value">0</span>s</div>
             </div>
         </div>
         <div id="start-screen">
             <h1>LoL Training Ground</h1>
-            <p>Entraînez-vous entre vos parties de ranked!</p>
-            <button id="start-button">JOUER</button>
+            <p>Train between your ranked games!</p>
+            <div class="button-container">
+                <button id="start-button">PLAY</button>
+                <button id="settings-button">SETTINGS</button>
+            </div>
+        </div>
+        <div id="settings-screen" class="hidden">
+            <h1>Settings</h1>
+            <div id="keybinding-settings">
+                <h2>Controls</h2>
+                <div class="keybind-row">
+                    <span>Move Forward:</span>
+                    <button class="keybind-button" data-action="forward">W</button>
+                </div>
+                <div class="keybind-row">
+                    <span>Move Backward:</span>
+                    <button class="keybind-button" data-action="backward">S</button>
+                </div>
+                <div class="keybind-row">
+                    <span>Move Left:</span>
+                    <button class="keybind-button" data-action="left">A</button>
+                </div>
+                <div class="keybind-row">
+                    <span>Move Right:</span>
+                    <button class="keybind-button" data-action="right">D</button>
+                </div>
+                <div class="keybind-row">
+                    <span>Shoot:</span>
+                    <span>Left Mouse Button</span>
+                </div>
+            </div>
+            <button id="back-button">BACK</button>
         </div>
         <div id="game-over-screen" class="hidden">
-            <h1>Partie Terminée</h1>
+            <h1>Game Over</h1>
             <div id="final-stats">
-                <p>Score final: <span id="final-score">0</span></p>
-                <p>Or collecté: <span id="final-gold">0</span></p>
-                <p>Temps survécu: <span id="final-time">0</span>s</p>
+                <p>Final score: <span id="final-score">0</span></p>
+                <p>Gold collected: <span id="final-gold">0</span></p>
+                <p>Survival time: <span id="final-time">0</span>s</p>
             </div>
-            <button id="restart-button">REJOUER</button>
+            <button id="restart-button">PLAY AGAIN</button>
         </div>
     </div>
 
-    <!-- Chargement des bibliothèques -->
+    <!-- Loading libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="js/main.js" type="module"></script>
 </body>

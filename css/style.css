@@ -51,7 +51,7 @@ canvas {
     color: #CDFAFA;
 }
 
-#start-screen, #game-over-screen {
+#start-screen, #game-over-screen, #settings-screen {
     position: absolute;
     top: 0;
     left: 0;
@@ -75,6 +75,13 @@ h1 {
     text-shadow: 0 0 10px #785A28;
 }
 
+h2 {
+    font-size: 28px;
+    color: #CDFAFA;
+    margin: 15px 0;
+    letter-spacing: 1px;
+}
+
 p {
     font-size: 24px;
     margin-bottom: 30px;
@@ -91,6 +98,7 @@ button {
     transition: all 0.3s;
     font-weight: bold;
     letter-spacing: 1px;
+    margin: 5px;
 }
 
 button:hover {
@@ -109,4 +117,55 @@ button:hover {
 
 .hidden {
     display: none !important;
+}
+
+.button-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+/* Settings Styles */
+#keybinding-settings {
+    background-color: rgba(30, 35, 40, 0.8);
+    padding: 30px;
+    border: 1px solid #C8AA6E;
+    margin-bottom: 20px;
+    min-width: 400px;
+    border-radius: 4px;
+}
+
+.keybind-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 15px 0;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(200, 170, 110, 0.3);
+}
+
+.keybind-row span {
+    font-size: 18px;
+    color: #F0E6D2;
+}
+
+.keybind-button {
+    width: 60px;
+    text-align: center;
+    padding: 8px 0;
+    font-size: 16px;
+    background-color: #1E2328;
+    border: 1px solid #C8AA6E;
+    color: #CDFAFA;
+}
+
+.keybind-button:hover {
+    background-color: #2A333C;
+}
+
+.keybind-button.listening {
+    background-color: #C8AA6E;
+    color: #0A1428;
+    box-shadow: 0 0 10px #C8AA6E;
 } 

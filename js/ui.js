@@ -1,45 +1,45 @@
 export class UI {
     constructor() {
-        // Éléments d'interface
+        // UI elements
         this.healthElement = document.getElementById('health-value');
         this.goldElement = document.getElementById('gold-value');
         this.scoreElement = document.getElementById('score-value');
         this.timerElement = document.getElementById('timer-value');
         
-        // Éléments pour l'écran de fin
+        // Game over screen elements
         this.finalScoreElement = document.getElementById('final-score');
         this.finalGoldElement = document.getElementById('final-gold');
         this.finalTimeElement = document.getElementById('final-time');
         
-        // Valeurs initiales
+        // Initial values
         this.health = 100;
         this.gold = 0;
         this.score = 0;
         this.time = 0;
         
-        // Timer de jeu
+        // Game timer
         this.gameTimer = null;
     }
     
-    // Mettre à jour les points de vie
+    // Update health points
     updateHealth(health) {
         this.health = health;
         this.healthElement.textContent = Math.max(0, Math.floor(health));
     }
     
-    // Mettre à jour l'or
+    // Update gold
     updateGold(gold) {
         this.gold = gold;
         this.goldElement.textContent = gold;
     }
     
-    // Mettre à jour le score
+    // Update score
     updateScore(score) {
         this.score = score;
         this.scoreElement.textContent = score;
     }
     
-    // Démarrer le chronomètre
+    // Start timer
     startTimer() {
         this.time = 0;
         this.timerElement.textContent = '0';
@@ -50,7 +50,7 @@ export class UI {
         }, 1000);
     }
     
-    // Arrêter le chronomètre
+    // Stop timer
     stopTimer() {
         if (this.gameTimer) {
             clearInterval(this.gameTimer);
@@ -58,7 +58,7 @@ export class UI {
         }
     }
     
-    // Afficher l'écran de fin
+    // Show game over screen
     showGameOver() {
         this.finalScoreElement.textContent = this.score;
         this.finalGoldElement.textContent = this.gold;
@@ -67,7 +67,7 @@ export class UI {
         document.getElementById('game-over-screen').classList.remove('hidden');
     }
     
-    // Réinitialiser l'interface
+    // Reset UI
     reset() {
         this.updateHealth(100);
         this.updateGold(0);

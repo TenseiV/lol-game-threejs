@@ -4,8 +4,9 @@ import { Projectile } from './projectile.js';
 import { Target } from './target.js';
 
 export class Game {
-    constructor(ui) {
+    constructor(ui, keyBindings) {
         this.ui = ui;
+        this.keyBindings = keyBindings;
         this.scene = null;
         this.camera = null;
         this.renderer = null;
@@ -17,15 +18,15 @@ export class Game {
         this.clock = new THREE.Clock();
         this.isGameRunning = false;
         
-        // Paramètres de jeu
-        this.minionSpawnRate = 3; // en secondes
-        this.projectileSpawnRate = 2; // en secondes
-        this.targetSpawnRate = 5; // en secondes
+        // Game parameters
+        this.minionSpawnRate = 3; // in seconds
+        this.projectileSpawnRate = 2; // in seconds
+        this.targetSpawnRate = 5; // in seconds
         this.lastMinionSpawn = 0;
         this.lastProjectileSpawn = 0;
         this.lastTargetSpawn = 0;
         
-        // Contrôles
+        // Controls
         this.keys = {
             forward: false,
             backward: false,
@@ -34,7 +35,7 @@ export class Game {
             space: false
         };
         
-        // Constantes
+        // Constants
         this.GROUND_SIZE = 100;
         this.MINION_LIMIT = 10;
         this.PROJECTILE_LIMIT = 15;
@@ -47,11 +48,11 @@ export class Game {
     }
     
     init() {
-        // Créer la scène
+        // Create the scene
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x0A1428);
         
-        // Créer la caméra
+        // Create the camera
         this.camera = new THREE.PerspectiveCamera(
             75,
             window.innerWidth / window.innerHeight,
@@ -61,13 +62,13 @@ export class Game {
         this.camera.position.set(0, 30, 30);
         this.camera.lookAt(0, 0, 0);
         
-        // Créer le renderer
+        // Create the renderer
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.shadowMap.enabled = true;
         document.getElementById('game-container').appendChild(this.renderer.domElement);
         
-        // Ajouter des lumières
+        // Add lights
         const ambientLight = new THREE.AmbientLight(0x404040);
         this.scene.add(ambientLight);
         
@@ -76,7 +77,7 @@ export class Game {
         directionalLight.castShadow = true;
         this.scene.add(directionalLight);
         
-        // Créer le sol
+        // Create the ground
         const groundGeometry = new THREE.PlaneGeometry(this.GROUND_SIZE, this.GROUND_SIZE);
         const groundMaterial = new THREE.MeshStandardMaterial({
             color: 0x1E2328,
@@ -88,16 +89,16 @@ export class Game {
         ground.receiveShadow = true;
         this.scene.add(ground);
         
-        // Ajouter des bordures à l'arène
+        // Add arena borders
         this.createArena();
         
-        // Créer le joueur
+        // Create the player
         this.player = new Player(this.scene);
         
-        // Configurer les contrôles
+        // Setup controls
         this.setupControls();
         
-        // Configurer le redimensionnement de la fenêtre
+        // Setup window resizing
         window.addEventListener('resize', () => this.onWindowResize());
     }
     
@@ -112,7 +113,7 @@ export class Game {
             metalness: 0.3
         });
         
-        // Mur Nord
+        // North wall
         const northWall = new THREE.Mesh(
             new THREE.BoxGeometry(this.GROUND_SIZE, wallHeight, wallThickness),
             wallMaterial
@@ -122,7 +123,7 @@ export class Game {
         northWall.receiveShadow = true;
         this.scene.add(northWall);
         
-        // Mur Sud
+        // South wall
         const southWall = new THREE.Mesh(
             new THREE.BoxGeometry(this.GROUND_SIZE, wallHeight, wallThickness),
             wallMaterial
@@ -132,7 +133,7 @@ export class Game {
         southWall.receiveShadow = true;
         this.scene.add(southWall);
         
-        // Mur Est
+        // East wall
         const eastWall = new THREE.Mesh(
             new THREE.BoxGeometry(wallThickness, wallHeight, this.GROUND_SIZE),
             wallMaterial
@@ -142,7 +143,7 @@ export class Game {
         eastWall.receiveShadow = true;
         this.scene.add(eastWall);
         
-        // Mur Ouest
+        // West wall
         const westWall = new THREE.Mesh(
             new THREE.BoxGeometry(wallThickness, wallHeight, this.GROUND_SIZE),
             wallMaterial
@@ -154,50 +155,48 @@ export class Game {
     }
     
     setupControls() {
-        // Événements clavier
+        // Keyboard events
         window.addEventListener('keydown', (event) => {
-            switch (event.code) {
-                case 'KeyW': this.keys.forward = true; break;
-                case 'KeyS': this.keys.backward = true; break;
-                case 'KeyA': this.keys.left = true; break;
-                case 'KeyD': this.keys.right = true; break;
-                case 'Space': this.keys.space = true; break;
-            }
+            // Check custom key bindings
+            if (event.code === this.keyBindings.getBinding('forward')) this.keys.forward = true;
+            if (event.code === this.keyBindings.getBinding('backward')) this.keys.backward = true;
+            if (event.code === this.keyBindings.getBinding('left')) this.keys.left = true;
+            if (event.code === this.keyBindings.getBinding('right')) this.keys.right = true;
+            if (event.code === 'Space') this.keys.space = true;
         });
         
         window.addEventListener('keyup', (event) => {
-            switch (event.code) {
-                case 'KeyW': this.keys.forward = false; break;
-                case 'KeyS': this.keys.backward = false; break;
-                case 'KeyA': this.keys.left = false; break;
-                case 'KeyD': this.keys.right = false; break;
-                case 'Space': this.keys.space = false; break;
-            }
+            // Check custom key bindings
+            if (event.code === this.keyBindings.getBinding('forward')) this.keys.forward = false;
+            if (event.code === this.keyBindings.getBinding('backward')) this.keys.backward = false;
+            if (event.code === this.keyBindings.getBinding('left')) this.keys.left = false;
+            if (event.code === this.keyBindings.getBinding('right')) this.keys.right = false;
+            if (event.code === 'Space') this.keys.space = false;
         });
         
-        // Événements de la souris pour viser
+        // Mouse events for aiming
         window.addEventListener('mousemove', (event) => {
             if (!this.isGameRunning) return;
             
-            // Convertir la position de la souris en coordonnées normalisées (-1 à 1)
+            // Convert mouse position to normalized coordinates (-1 to 1)
             const mouse = new THREE.Vector2();
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
             
-            // Faire un raycasting pour déterminer où le joueur vise
+            // Raycasting to determine where the player is aiming
             const raycaster = new THREE.Raycaster();
             raycaster.setFromCamera(mouse, this.camera);
             
-            // Calculer l'intersection avec le plan du sol
+            // Calculate intersection with the ground plane
             const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
             const targetPoint = new THREE.Vector3();
             raycaster.ray.intersectPlane(groundPlane, targetPoint);
             
-            // Faire tourner le joueur vers le point ciblé
+            // Rotate player to face the target point
             this.player.lookAt(targetPoint);
         });
         
-        // Tirer avec le clic gauche
+        // Left click to shoot
         window.addEventListener('mousedown', (event) => {
             if (!this.isGameRunning || event.button !== 0) return;
             
@@ -215,34 +214,34 @@ export class Game {
     spawnMinion() {
         if (this.minions.length >= this.MINION_LIMIT) return;
         
-        // Position aléatoire sur le bord de l'arène
-        const side = Math.floor(Math.random() * 4); // 0-3 pour N, E, S, O
+        // Random position at the edge of the arena
+        const side = Math.floor(Math.random() * 4); // 0-3 for N, E, S, W
         const pos = new THREE.Vector3();
         const halfSize = this.GROUND_SIZE / 2 - 5;
         
         switch (side) {
-            case 0: // Nord
+            case 0: // North
                 pos.set(
                     Math.random() * this.GROUND_SIZE - halfSize,
                     0,
                     -halfSize
                 );
                 break;
-            case 1: // Est
+            case 1: // East
                 pos.set(
                     halfSize,
                     0,
                     Math.random() * this.GROUND_SIZE - halfSize
                 );
                 break;
-            case 2: // Sud
+            case 2: // South
                 pos.set(
                     Math.random() * this.GROUND_SIZE - halfSize,
                     0,
                     halfSize
                 );
                 break;
-            case 3: // Ouest
+            case 3: // West
                 pos.set(
                     -halfSize,
                     0,
@@ -258,16 +257,16 @@ export class Game {
     spawnEnemyProjectile() {
         if (this.enemyProjectiles.length >= this.PROJECTILE_LIMIT) return;
         
-        // Position aléatoire autour de l'arène
+        // Random position around the arena
         const angle = Math.random() * Math.PI * 2;
         const radius = this.GROUND_SIZE / 2 - 2;
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius;
         const pos = new THREE.Vector3(x, 2, z);
         
-        // Direction vers le joueur avec légère déviation aléatoire
+        // Direction towards player with slight random deviation
         const dir = this.player.position.clone().sub(pos).normalize();
-        const deviation = 0.2; // Ajustez pour la difficulté
+        const deviation = 0.2; // Adjust for difficulty
         dir.x += (Math.random() - 0.5) * deviation;
         dir.z += (Math.random() - 0.5) * deviation;
         dir.normalize();
@@ -279,7 +278,7 @@ export class Game {
     spawnTarget() {
         if (this.targets.length >= this.TARGET_LIMIT) return;
         
-        // Position aléatoire dans l'arène
+        // Random position in the arena
         const halfSize = this.GROUND_SIZE / 2 - 10;
         const x = (Math.random() * 2 - 1) * halfSize;
         const z = (Math.random() * 2 - 1) * halfSize;
@@ -301,22 +300,22 @@ export class Game {
         const delta = this.clock.getDelta();
         const time = this.clock.getElapsedTime();
         
-        // Mettre à jour le joueur
+        // Update player
         this.player.update(delta, this.keys);
         this.keepInBounds(this.player);
         
-        // Mettre à jour la caméra pour suivre le joueur
+        // Update camera to follow player
         const cameraOffset = new THREE.Vector3(0, 30, 30);
         this.camera.position.copy(this.player.position).add(cameraOffset);
         this.camera.lookAt(this.player.position);
         
-        // Mettre à jour les sbires
+        // Update minions
         for (let i = this.minions.length - 1; i >= 0; i--) {
             const minion = this.minions[i];
             minion.update(delta, this.player.position);
             this.keepInBounds(minion);
             
-            // Vérifier la collision avec le joueur
+            // Check collision with player
             if (this.checkCollision(minion, this.player)) {
                 this.health -= 5 * delta;
                 this.ui.updateHealth(this.health);
@@ -328,7 +327,7 @@ export class Game {
             }
         }
         
-        // Mettre à jour les projectiles du joueur
+        // Update player projectiles
         for (let i = this.playerProjectiles.length - 1; i >= 0; i--) {
             const projectile = this.playerProjectiles[i];
             projectile.update(delta);
@@ -339,7 +338,7 @@ export class Game {
                 continue;
             }
             
-            // Vérifier les collisions avec les sbires
+            // Check collisions with minions
             for (let j = this.minions.length - 1; j >= 0; j--) {
                 const minion = this.minions[j];
                 
@@ -362,7 +361,7 @@ export class Game {
             }
         }
         
-        // Mettre à jour les projectiles ennemis
+        // Update enemy projectiles
         for (let i = this.enemyProjectiles.length - 1; i >= 0; i--) {
             const projectile = this.enemyProjectiles[i];
             projectile.update(delta);
@@ -373,7 +372,7 @@ export class Game {
                 continue;
             }
             
-            // Vérifier la collision avec le joueur
+            // Check collision with player
             if (this.checkCollision(projectile, this.player)) {
                 projectile.remove();
                 this.enemyProjectiles.splice(i, 1);
@@ -388,12 +387,12 @@ export class Game {
             }
         }
         
-        // Mettre à jour les cibles
+        // Update targets
         for (let i = this.targets.length - 1; i >= 0; i--) {
             const target = this.targets[i];
             target.update(delta);
             
-            // Vérifier les collisions avec les projectiles du joueur
+            // Check collisions with player projectiles
             for (let j = this.playerProjectiles.length - 1; j >= 0; j--) {
                 const projectile = this.playerProjectiles[j];
                 
@@ -412,7 +411,7 @@ export class Game {
             }
         }
         
-        // Spawn de nouveaux ennemis et projectiles
+        // Spawn new enemies and projectiles
         if (time - this.lastMinionSpawn > this.minionSpawnRate) {
             this.spawnMinion();
             this.lastMinionSpawn = time;
@@ -479,14 +478,14 @@ export class Game {
     }
     
     dispose() {
-        // Nettoyer la scène
+        // Clean up the scene
         this.isGameRunning = false;
         
         if (this.renderer) {
             this.renderer.domElement.remove();
         }
         
-        // Supprimer les objets de la scène
+        // Remove objects from the scene
         if (this.player) {
             this.player.remove();
         }
@@ -501,7 +500,7 @@ export class Game {
         this.enemyProjectiles = [];
         this.targets = [];
         
-        // Supprimer les événements
+        // Remove event listeners
         window.removeEventListener('resize', this.onWindowResize);
     }
 } 

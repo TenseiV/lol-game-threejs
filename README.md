@@ -1,70 +1,72 @@
 # LoL Training Ground
 
-Un mini-jeu d'entraînement pour les joueurs de League of Legends, conçu pour s'exercer pendant les temps d'attente en file de matchmaking.
+A mini-game for League of Legends players, designed to practice during queue times between ranked matches.
 
-## Fonctionnalités
+## Features
 
-- Contrôle d'un champion dans un environnement 3D inspiré de l'univers de LoL
-- Last hit de sbires pour gagner de l'or et des points
-- Esquive de projectiles ennemis
-- Tir sur des cibles mouvantes pour améliorer votre précision
-- Compteurs de score, d'or et de temps de survie
-- Style visuel rappelant l'esthétique de League of Legends
+- Control a champion in a 3D environment inspired by the LoL universe
+- Last hit minions to earn gold and points
+- Dodge enemy projectiles
+- Shoot at moving targets to improve your accuracy
+- Score, gold, and survival time counters
+- Visual style reminiscent of League of Legends aesthetics
+- Customizable keybindings
 
-## Installation et démarrage
+## Installation and Setup
 
-1. Clonez ce dépôt :
+1. Clone this repository:
    ```
    git clone https://github.com/TenseiV/lol-game-threejs.git
    cd lol-game-threejs
    ```
 
-2. Installez les dépendances :
+2. Install dependencies:
    ```
    npm install
    ```
 
-3. Démarrez le serveur local :
+3. Start the local server:
    ```
    npm start
    ```
 
-4. Ouvrez votre navigateur et accédez à :
+4. Open your browser and go to:
    ```
    http://localhost:8080
    ```
 
-## Comment jouer
+## How to Play
 
-1. Cliquez sur le bouton "JOUER" pour commencer
-2. Utilisez les touches WASD pour vous déplacer
-3. Visez avec la souris et tirez avec le clic gauche
-4. Esquivez les projectiles rouges
-5. Éliminez les sbires (créatures rouges) pour gagner de l'or et des points
-6. Tirez sur les cibles dorées pour obtenir plus de points
+1. Click the "PLAY" button to start
+2. Use the WASD keys (or your custom keybindings) to move
+3. Aim with the mouse and shoot with the left mouse button
+4. Dodge red projectiles
+5. Eliminate minions (red creatures) to earn gold and points
+6. Shoot at golden targets for bonus points
 
-## Contrôles
+## Controls
 
-- **W** : Avancer
-- **S** : Reculer
-- **A** : Se déplacer vers la gauche
-- **D** : Se déplacer vers la droite
-- **Souris** : Viser
-- **Clic gauche** : Tirer
+Default controls (can be customized in the Settings menu):
+- **W** : Move forward
+- **S** : Move backward
+- **A** : Move left
+- **D** : Move right
+- **Mouse** : Aim
+- **Left Mouse Button** : Shoot
 
-## Objectif
+## Objective
 
-Survivez le plus longtemps possible tout en maximisant votre score et votre récolte d'or. Entraînez votre capacité à last hit les sbires et à esquiver les skillshots, compétences essentielles pour progresser dans League of Legends.
+Survive as long as possible while maximizing your score and gold collection. Train your ability to last hit minions and dodge skillshots, essential skills for improving in League of Legends.
 
-## Développement
+## Development
 
-Ce jeu est développé en JavaScript avec la bibliothèque Three.js pour les graphismes 3D. Tous les assets sont générés procéduralement pour un chargement rapide.
+This game is developed in JavaScript with the Three.js library for 3D graphics. All assets are procedurally generated for quick loading.
 
-## Configuration requise
+## Requirements
 
-- Un navigateur web moderne supportant WebGL (Chrome, Firefox, Safari, Edge)
-- Node.js pour le serveur de développement local
+- A modern web browser supporting WebGL (Chrome, Firefox, Safari, Edge)
+- Node.js for the local development server
 
 ---
 
-Bon entraînement sur la Faille de l'Invocateur ! 
+Good luck on the Summoner's Rift! 
