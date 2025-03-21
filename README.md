@@ -11,15 +11,37 @@ Un mini-jeu d'entraînement pour les joueurs de League of Legends, conçu pour s
 - Compteurs de score, d'or et de temps de survie
 - Style visuel rappelant l'esthétique de League of Legends
 
+## Installation et démarrage
+
+1. Clonez ce dépôt :
+   ```
+   git clone https://github.com/TenseiV/lol-game-threejs.git
+   cd lol-game-threejs
+   ```
+
+2. Installez les dépendances :
+   ```
+   npm install
+   ```
+
+3. Démarrez le serveur local :
+   ```
+   npm start
+   ```
+
+4. Ouvrez votre navigateur et accédez à :
+   ```
+   http://localhost:8080
+   ```
+
 ## Comment jouer
 
-1. Ouvrez le fichier `index.html` dans votre navigateur
-2. Cliquez sur le bouton "JOUER" pour commencer
-3. Utilisez les touches WASD pour vous déplacer
-4. Visez avec la souris et tirez avec le clic gauche
-5. Esquivez les projectiles rouges
-6. Éliminez les sbires (créatures rouges) pour gagner de l'or et des points
-7. Tirez sur les cibles dorées pour obtenir plus de points
+1. Cliquez sur le bouton "JOUER" pour commencer
+2. Utilisez les touches WASD pour vous déplacer
+3. Visez avec la souris et tirez avec le clic gauche
+4. Esquivez les projectiles rouges
+5. Éliminez les sbires (créatures rouges) pour gagner de l'or et des points
+6. Tirez sur les cibles dorées pour obtenir plus de points
 
 ## Contrôles
 
@@ -41,7 +63,7 @@ Ce jeu est développé en JavaScript avec la bibliothèque Three.js pour les gra
 ## Configuration requise
 
 - Un navigateur web moderne supportant WebGL (Chrome, Firefox, Safari, Edge)
-- Aucune installation nécessaire
+- Node.js pour le serveur de développement local
 
 ---
 
