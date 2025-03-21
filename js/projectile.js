@@ -1,135 +1,167 @@
 export class Projectile {
-    constructor(scene, position, direction, isPlayerProjectile) {
+    constructor(scene, position, direction, isPlayerProjectile = false) {
         this.scene = scene;
         this.position = position.clone();
-        this.direction = direction.clone();
+        this.direction = direction.clone().normalize();
         this.isPlayerProjectile = isPlayerProjectile;
-        this.speed = isPlayerProjectile ? 20 : 12; // Les projectiles du joueur sont plus rapides
+        this.speed = isPlayerProjectile ? 30 : 15;
         this.radius = 0.3;
+        this.lifetime = 0;
+        this.maxLifetime = 3; // Seconds before automatic removal
         
-        // Créer le modèle du projectile
-        this.createModel();
+        // Create a projectile that resembles a LoL skill shot
+        this.createProjectile();
     }
     
-    createModel() {
-        const geometry = new THREE.SphereGeometry(this.radius, 8, 8);
+    createProjectile() {
+        // Create different projectiles based on source
+        if (this.isPlayerProjectile) {
+            // Blue skillshot for player (like Ezreal Q)
+            this.createPlayerProjectile();
+        } else {
+            // Red projectile for enemies
+            this.createEnemyProjectile();
+        }
         
-        // Couleur différente selon l'origine du projectile
-        const material = new THREE.MeshStandardMaterial({
-            color: this.isPlayerProjectile ? 0x0AC8B9 : 0xFF5859, // Turquoise pour joueur, rouge pour ennemis
-            roughness: 0.2,
-            metalness: 0.8,
-            emissive: this.isPlayerProjectile ? 0x0AC8B9 : 0xFF5859,
-            emissiveIntensity: 0.5
+        // Position the projectile
+        this.mesh.position.copy(this.position);
+        
+        // Orient the projectile in the direction it's traveling
+        this.mesh.lookAt(this.position.clone().add(this.direction));
+        
+        // Add to scene
+        this.scene.add(this.mesh);
+    }
+    
+    createPlayerProjectile() {
+        // Create a blue energy bolt
+        this.mesh = new THREE.Group();
+        
+        // Main body - elongated to look like a skillshot
+        const bodyGeometry = new THREE.CylinderGeometry(0.2, 0.2, 1.5, 8);
+        bodyGeometry.rotateX(Math.PI / 2); // Rotate to align with direction
+        
+        const bodyMaterial = new THREE.MeshBasicMaterial({
+            color: 0x0ACBE6,
+            transparent: true,
+            opacity: 0.8
         });
         
-        this.mesh = new THREE.Mesh(geometry, material);
-        this.mesh.position.copy(this.position);
-        this.mesh.castShadow = true;
-        this.scene.add(this.mesh);
+        const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+        this.mesh.add(body);
         
-        // Ajouter une lumière pour l'effet brillant
-        this.light = new THREE.PointLight(
-            this.isPlayerProjectile ? 0x0AC8B9 : 0xFF5859,
-            0.7,
-            3
-        );
-        this.light.position.copy(this.position);
-        this.scene.add(this.light);
+        // Core - brighter inner part
+        const coreGeometry = new THREE.CylinderGeometry(0.1, 0.1, 1.6, 8);
+        coreGeometry.rotateX(Math.PI / 2);
         
-        // Effet de traînée (particules)
-        if (this.isPlayerProjectile) {
-            // Créer le système de traînée pour les projectiles du joueur
-            const trailGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-            const trailMaterial = new THREE.MeshBasicMaterial({
-                color: 0x0AC8B9,
-                transparent: true,
-                opacity: 0.7
-            });
-            
-            this.trail = [];
-            for (let i = 0; i < 5; i++) {
-                const trailPart = new THREE.Mesh(trailGeometry, trailMaterial);
-                trailPart.visible = false;
-                this.scene.add(trailPart);
-                this.trail.push({
-                    mesh: trailPart,
-                    position: this.position.clone(),
-                    age: i * 0.05
-                });
-            }
-        }
+        const coreMaterial = new THREE.MeshBasicMaterial({
+            color: 0xFFFFFF,
+            transparent: true,
+            opacity: 0.9
+        });
+        
+        const core = new THREE.Mesh(coreGeometry, coreMaterial);
+        this.mesh.add(core);
     }
     
-    update(deltaTime) {
-        // Déplacer le projectile dans sa direction
-        const moveDistance = this.speed * deltaTime;
-        const movement = this.direction.clone().multiplyScalar(moveDistance);
+    createEnemyProjectile() {
+        // Create a red energy projectile
+        this.mesh = new THREE.Group();
+        
+        // Main body
+        const bodyGeometry = new THREE.SphereGeometry(0.3, 8, 8);
+        const bodyMaterial = new THREE.MeshBasicMaterial({
+            color: 0xFF3333,
+            transparent: true,
+            opacity: 0.8
+        });
+        
+        const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+        this.mesh.add(body);
+        
+        // Core
+        const coreGeometry = new THREE.SphereGeometry(0.15, 8, 8);
+        const coreMaterial = new THREE.MeshBasicMaterial({
+            color: 0xFF7777,
+            transparent: true,
+            opacity: 0.9
+        });
+        
+        const core = new THREE.Mesh(coreGeometry, coreMaterial);
+        this.mesh.add(core);
+    }
+    
+    update(delta) {
+        // Update lifetime
+        this.lifetime += delta;
+        
+        // Remove if lifetime exceeded
+        if (this.lifetime > this.maxLifetime) {
+            this.remove();
+            return false;
+        }
+        
+        // Move projectile in its direction
+        const moveAmount = this.speed * delta;
+        const movement = this.direction.clone().multiplyScalar(moveAmount);
         this.position.add(movement);
         
-        // Mettre à jour la position du mesh et de la lumière
+        // Update mesh position
         this.mesh.position.copy(this.position);
-        this.light.position.copy(this.position);
         
-        // Effet de rotation pour les projectiles
-        this.mesh.rotation.x += deltaTime * 2;
-        this.mesh.rotation.y += deltaTime * 3;
-        
-        // Mettre à jour la traînée pour les projectiles du joueur
-        if (this.isPlayerProjectile && this.trail) {
-            for (let i = 0; i < this.trail.length; i++) {
-                const trailPart = this.trail[i];
-                trailPart.age += deltaTime;
-                
-                if (trailPart.age > 0.05) {
-                    trailPart.age = 0;
-                    trailPart.position.copy(this.position);
-                    trailPart.mesh.position.copy(this.position);
-                    trailPart.mesh.visible = true;
-                    
-                    // Faire disparaître progressivement
-                    trailPart.mesh.material.opacity = 0.7;
-                    setTimeout(() => {
-                        if (trailPart.mesh) {
-                            trailPart.mesh.material.opacity *= 0.8;
-                        }
-                    }, 50);
-                    setTimeout(() => {
-                        if (trailPart.mesh) {
-                            trailPart.mesh.material.opacity *= 0.8;
-                        }
-                    }, 100);
-                    setTimeout(() => {
-                        if (trailPart.mesh) {
-                            trailPart.mesh.visible = false;
-                        }
-                    }, 150);
-                }
-            }
+        // If player projectile, add a trail effect
+        if (this.isPlayerProjectile && Math.random() > 0.7) {
+            this.createTrailEffect();
         }
+        
+        return true;
+    }
+    
+    createTrailEffect() {
+        // Create a particle that stays behind and fades out
+        const trailGeometry = new THREE.SphereGeometry(0.1, 4, 4);
+        const trailMaterial = new THREE.MeshBasicMaterial({
+            color: this.isPlayerProjectile ? 0x0ACBE6 : 0xFF3333,
+            transparent: true,
+            opacity: 0.5
+        });
+        
+        const trail = new THREE.Mesh(trailGeometry, trailMaterial);
+        trail.position.copy(this.position);
+        this.scene.add(trail);
+        
+        // Fade out and remove after a short time
+        const fadeOutTime = 0.3; // seconds
+        let elapsedTime = 0;
+        const initialOpacity = trailMaterial.opacity;
+        
+        const animate = () => {
+            elapsedTime += 0.016; // Approximately 60fps
+            
+            if (elapsedTime < fadeOutTime) {
+                const newOpacity = initialOpacity * (1 - elapsedTime / fadeOutTime);
+                trailMaterial.opacity = newOpacity;
+                requestAnimationFrame(animate);
+            } else {
+                this.scene.remove(trail);
+                trailGeometry.dispose();
+                trailMaterial.dispose();
+            }
+        };
+        
+        requestAnimationFrame(animate);
     }
     
     remove() {
-        // Nettoyer le projectile et ses effets
         if (this.mesh) {
             this.scene.remove(this.mesh);
-            this.mesh = null;
-        }
-        
-        if (this.light) {
-            this.scene.remove(this.light);
-            this.light = null;
-        }
-        
-        // Nettoyer la traînée
-        if (this.trail) {
-            for (let i = 0; i < this.trail.length; i++) {
-                if (this.trail[i].mesh) {
-                    this.scene.remove(this.trail[i].mesh);
-                    this.trail[i].mesh = null;
-                }
+            // Dispose of geometries and materials to free up memory
+            if (this.mesh.children) {
+                this.mesh.children.forEach(child => {
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) child.material.dispose();
+                });
             }
-            this.trail = null;
         }
     }
 } 

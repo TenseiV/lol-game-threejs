@@ -126,6 +126,30 @@ button:hover {
     margin-top: 20px;
 }
 
+/* Instructions Box Styles */
+.instructions-box {
+    background-color: rgba(30, 35, 40, 0.8);
+    padding: 20px;
+    border: 1px solid #C8AA6E;
+    border-radius: 4px;
+    margin: 20px auto;
+    max-width: 600px;
+    text-align: left;
+}
+
+.instructions-box h3 {
+    color: #C8AA6E;
+    font-size: 20px;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+}
+
+.instructions-box p {
+    font-size: 16px;
+    margin: 8px 0;
+    color: #F0E6D2;
+}
+
 /* Settings Styles */
 #keybinding-settings {
     background-color: rgba(30, 35, 40, 0.8);

@@ -19,12 +19,13 @@ export class Game {
         this.isGameRunning = false;
         
         // Game parameters
-        this.minionSpawnRate = 3; // in seconds
-        this.projectileSpawnRate = 2; // in seconds
-        this.targetSpawnRate = 5; // in seconds
-        this.lastMinionSpawn = 0;
+        this.minionWaveTime = 30; // Time between minion waves in seconds
+        this.lastMinionWave = 0;
+        this.minionWavesSpawned = 0;
+        this.minionsPerWave = 6; // Minions per wave
+        this.minionLanes = ['top', 'mid', 'bot']; // Minion lanes
+        this.projectileSpawnRate = 4; // in seconds
         this.lastProjectileSpawn = 0;
-        this.lastTargetSpawn = 0;
         
         // Controls
         this.keys = {
@@ -35,11 +36,14 @@ export class Game {
             space: false
         };
         
+        // Mouse position for player movement
+        this.mousePosition = new THREE.Vector2();
+        this.isMouseDown = false;
+        
         // Constants
         this.GROUND_SIZE = 100;
-        this.MINION_LIMIT = 10;
+        this.MINION_LIMIT = 50;
         this.PROJECTILE_LIMIT = 15;
-        this.TARGET_LIMIT = 5;
         
         // Stats
         this.health = 100;
@@ -52,47 +56,58 @@ export class Game {
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x0A1428);
         
-        // Create the camera
-        this.camera = new THREE.PerspectiveCamera(
-            75,
-            window.innerWidth / window.innerHeight,
-            0.1,
+        // Create the camera (isometric view like LoL)
+        this.camera = new THREE.OrthographicCamera(
+            window.innerWidth / -20,
+            window.innerWidth / 20,
+            window.innerHeight / 20,
+            window.innerHeight / -20,
+            1,
             1000
         );
-        this.camera.position.set(0, 30, 30);
+        
+        // Position the camera for isometric view
+        this.camera.position.set(40, 60, 40); // Adjust these values to get the right angle
         this.camera.lookAt(0, 0, 0);
         
-        // Create the renderer
-        this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        // Make camera globally accessible for health bars
+        window.camera = this.camera;
+        
+        // Create the renderer (optimized for performance)
+        this.renderer = new THREE.WebGLRenderer({ 
+            antialias: true,
+            powerPreference: 'high-performance'
+        });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.getElementById('game-container').appendChild(this.renderer.domElement);
         
         // Add lights
-        const ambientLight = new THREE.AmbientLight(0x404040);
+        const ambientLight = new THREE.AmbientLight(0x6b7c85, 0.7);
         this.scene.add(ambientLight);
         
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-        directionalLight.position.set(10, 20, 10);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(50, 100, 50);
         directionalLight.castShadow = true;
+        
+        // Optimize shadow settings
+        directionalLight.shadow.mapSize.width = 1024;
+        directionalLight.shadow.mapSize.height = 1024;
+        directionalLight.shadow.camera.near = 0.5;
+        directionalLight.shadow.camera.far = 500;
+        directionalLight.shadow.camera.left = -60;
+        directionalLight.shadow.camera.right = 60;
+        directionalLight.shadow.camera.top = 60;
+        directionalLight.shadow.camera.bottom = -60;
+        
         this.scene.add(directionalLight);
         
-        // Create the ground
-        const groundGeometry = new THREE.PlaneGeometry(this.GROUND_SIZE, this.GROUND_SIZE);
-        const groundMaterial = new THREE.MeshStandardMaterial({
-            color: 0x1E2328,
-            roughness: 0.8,
-            metalness: 0.2
-        });
-        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-        ground.rotation.x = -Math.PI / 2;
-        ground.receiveShadow = true;
-        this.scene.add(ground);
+        // Create the ground (Summoner's Rift style)
+        this.createSummonersRift();
         
-        // Add arena borders
-        this.createArena();
-        
-        // Create the player
+        // Create the player champion
         this.player = new Player(this.scene);
         
         // Setup controls
@@ -102,60 +117,239 @@ export class Game {
         window.addEventListener('resize', () => this.onWindowResize());
     }
     
-    createArena() {
-        const wallHeight = 5;
-        const wallThickness = 1;
-        const halfSize = this.GROUND_SIZE / 2;
+    createSummonersRift() {
+        // Create the ground texture
+        const groundSize = this.GROUND_SIZE;
+        const groundGeometry = new THREE.PlaneGeometry(groundSize, groundSize, 32, 32);
         
-        const wallMaterial = new THREE.MeshStandardMaterial({
-            color: 0xC8AA6E,
-            roughness: 0.7,
-            metalness: 0.3
+        // Summoner's Rift green/blue tint
+        const groundMaterial = new THREE.MeshStandardMaterial({
+            color: 0x23411c,
+            roughness: 0.8,
+            metalness: 0.2
         });
         
-        // North wall
-        const northWall = new THREE.Mesh(
-            new THREE.BoxGeometry(this.GROUND_SIZE, wallHeight, wallThickness),
-            wallMaterial
-        );
-        northWall.position.set(0, wallHeight / 2, -halfSize);
-        northWall.castShadow = true;
-        northWall.receiveShadow = true;
-        this.scene.add(northWall);
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        this.scene.add(ground);
         
-        // South wall
-        const southWall = new THREE.Mesh(
-            new THREE.BoxGeometry(this.GROUND_SIZE, wallHeight, wallThickness),
-            wallMaterial
-        );
-        southWall.position.set(0, wallHeight / 2, halfSize);
-        southWall.castShadow = true;
-        southWall.receiveShadow = true;
-        this.scene.add(southWall);
+        // Create lanes (3 main lanes as in LoL)
+        this.createLanes();
         
-        // East wall
-        const eastWall = new THREE.Mesh(
-            new THREE.BoxGeometry(wallThickness, wallHeight, this.GROUND_SIZE),
-            wallMaterial
-        );
-        eastWall.position.set(halfSize, wallHeight / 2, 0);
-        eastWall.castShadow = true;
-        eastWall.receiveShadow = true;
-        this.scene.add(eastWall);
+        // Create jungle area with decorative elements
+        this.createJungle();
+    }
+    
+    createLanes() {
+        const halfSize = this.GROUND_SIZE / 2;
+        const laneWidth = 8;
         
-        // West wall
-        const westWall = new THREE.Mesh(
-            new THREE.BoxGeometry(wallThickness, wallHeight, this.GROUND_SIZE),
-            wallMaterial
+        // Lane material (more grayish like LoL lanes)
+        const laneMaterial = new THREE.MeshStandardMaterial({
+            color: 0x7e7865,
+            roughness: 0.7,
+            metalness: 0.1
+        });
+        
+        // Top lane
+        const topLane = new THREE.Mesh(
+            new THREE.PlaneGeometry(laneWidth, this.GROUND_SIZE),
+            laneMaterial
         );
-        westWall.position.set(-halfSize, wallHeight / 2, 0);
-        westWall.castShadow = true;
-        westWall.receiveShadow = true;
-        this.scene.add(westWall);
+        topLane.rotation.x = -Math.PI / 2;
+        topLane.position.set(-halfSize/2, 0.01, 0);
+        topLane.receiveShadow = true;
+        this.scene.add(topLane);
+        
+        // Mid lane
+        const midLane = new THREE.Mesh(
+            new THREE.PlaneGeometry(laneWidth, this.GROUND_SIZE),
+            laneMaterial
+        );
+        midLane.rotation.x = -Math.PI / 2;
+        midLane.rotation.z = Math.PI / 2;
+        midLane.position.set(0, 0.01, 0);
+        midLane.receiveShadow = true;
+        this.scene.add(midLane);
+        
+        // Bot lane
+        const botLane = new THREE.Mesh(
+            new THREE.PlaneGeometry(laneWidth, this.GROUND_SIZE),
+            laneMaterial
+        );
+        botLane.rotation.x = -Math.PI / 2;
+        botLane.position.set(halfSize/2, 0.01, 0);
+        botLane.receiveShadow = true;
+        this.scene.add(botLane);
+        
+        // Create lane markers for spawning (invisible, just for positioning)
+        this.laneSpawnPoints = {
+            top: new THREE.Vector3(-halfSize/2, 0, -halfSize),
+            mid: new THREE.Vector3(-halfSize, 0, -halfSize/2),
+            bot: new THREE.Vector3(halfSize/2, 0, -halfSize)
+        };
+        
+        this.laneDirections = {
+            top: new THREE.Vector3(0, 0, 1).normalize(),
+            mid: new THREE.Vector3(1, 0, 1).normalize(),
+            bot: new THREE.Vector3(0, 0, 1).normalize()
+        };
+    }
+    
+    createJungle() {
+        // Add some jungle elements like trees and rocks
+        const treeCount = 30;
+        const rockCount = 20;
+        const halfSize = this.GROUND_SIZE / 2 - 5;
+        
+        // Simple tree geometry
+        const treeGeometry = new THREE.ConeGeometry(2, 8, 8);
+        const treeMaterial = new THREE.MeshStandardMaterial({
+            color: 0x0e6b0e,
+            roughness: 0.8,
+            metalness: 0.1
+        });
+        
+        // Tree trunk
+        const trunkGeometry = new THREE.CylinderGeometry(0.5, 0.7, 4, 8);
+        const trunkMaterial = new THREE.MeshStandardMaterial({
+            color: 0x5c3a21,
+            roughness: 0.8,
+            metalness: 0.1
+        });
+        
+        // Rock geometry
+        const rockGeometry = new THREE.DodecahedronGeometry(1.5, 0);
+        const rockMaterial = new THREE.MeshStandardMaterial({
+            color: 0x777777,
+            roughness: 0.9,
+            metalness: 0.1
+        });
+        
+        // Create trees
+        for (let i = 0; i < treeCount; i++) {
+            // Keep trees away from lanes
+            let x, z;
+            do {
+                x = (Math.random() * 2 - 1) * halfSize;
+                z = (Math.random() * 2 - 1) * halfSize;
+            } while (
+                Math.abs(x) < 6 && Math.abs(z) < halfSize ||  // Mid lane
+                Math.abs(x - halfSize/2) < 6 && Math.abs(z) < halfSize ||  // Bot lane
+                Math.abs(x + halfSize/2) < 6 && Math.abs(z) < halfSize     // Top lane
+            );
+            
+            const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+            trunk.position.set(x, 2, z);
+            trunk.castShadow = true;
+            trunk.receiveShadow = true;
+            this.scene.add(trunk);
+            
+            const tree = new THREE.Mesh(treeGeometry, treeMaterial);
+            tree.position.set(x, 6, z);
+            tree.castShadow = true;
+            tree.receiveShadow = true;
+            this.scene.add(tree);
+        }
+        
+        // Create rocks
+        for (let i = 0; i < rockCount; i++) {
+            // Keep rocks away from lanes
+            let x, z;
+            do {
+                x = (Math.random() * 2 - 1) * halfSize;
+                z = (Math.random() * 2 - 1) * halfSize;
+            } while (
+                Math.abs(x) < 6 && Math.abs(z) < halfSize ||  // Mid lane
+                Math.abs(x - halfSize/2) < 6 && Math.abs(z) < halfSize ||  // Bot lane
+                Math.abs(x + halfSize/2) < 6 && Math.abs(z) < halfSize     // Top lane
+            );
+            
+            const rock = new THREE.Mesh(rockGeometry, rockMaterial);
+            rock.position.set(x, 0.5, z);
+            rock.rotation.set(
+                Math.random() * Math.PI,
+                Math.random() * Math.PI,
+                Math.random() * Math.PI
+            );
+            rock.scale.set(
+                0.5 + Math.random() * 0.5,
+                0.5 + Math.random() * 0.5,
+                0.5 + Math.random() * 0.5
+            );
+            rock.castShadow = true;
+            rock.receiveShadow = true;
+            this.scene.add(rock);
+        }
     }
     
     setupControls() {
-        // Keyboard events
+        // Mouse controls for movement (like in LoL)
+        this.renderer.domElement.addEventListener('mousedown', (event) => {
+            if (!this.isGameRunning) return;
+            
+            // Right click for movement
+            if (event.button === 2) {
+                this.isMouseDown = true;
+                
+                // Get the clicked point in 3D space
+                this.updateMousePosition(event);
+                
+                // Move the player to the clicked position
+                this.movePlayerToMousePosition();
+            }
+            
+            // Left click for shooting
+            if (event.button === 0) {
+                this.updateMousePosition(event);
+                
+                // Get clicked position in world space
+                const targetPoint = this.getMouseWorldPosition();
+                
+                // Aim at the clicked position
+                this.player.lookAtPosition(targetPoint);
+                
+                // Calculate direction from player to click point
+                const direction = new THREE.Vector3()
+                    .subVectors(targetPoint, this.player.position)
+                    .normalize();
+                
+                // Shoot
+                this.player.shoot();
+                const projectile = new Projectile(
+                    this.scene,
+                    this.player.position.clone().add(new THREE.Vector3(0, 1, 0)),
+                    direction,
+                    true
+                );
+                this.playerProjectiles.push(projectile);
+            }
+        });
+        
+        this.renderer.domElement.addEventListener('mouseup', (event) => {
+            if (event.button === 2) {
+                this.isMouseDown = false;
+            }
+        });
+        
+        this.renderer.domElement.addEventListener('mousemove', (event) => {
+            if (!this.isGameRunning) return;
+            
+            this.updateMousePosition(event);
+            
+            // If right mouse button is held down, keep moving the player
+            if (this.isMouseDown) {
+                this.movePlayerToMousePosition();
+            }
+        });
+        
+        // Prevent context menu on right-click
+        this.renderer.domElement.addEventListener('contextmenu', (event) => {
+            event.preventDefault();
+        });
+        
+        // Keyboard events (for alternative controls)
         window.addEventListener('keydown', (event) => {
             // Check custom key bindings
             if (event.code === this.keyBindings.getBinding('forward')) this.keys.forward = true;
@@ -173,123 +367,109 @@ export class Game {
             if (event.code === this.keyBindings.getBinding('right')) this.keys.right = false;
             if (event.code === 'Space') this.keys.space = false;
         });
-        
-        // Mouse events for aiming
-        window.addEventListener('mousemove', (event) => {
-            if (!this.isGameRunning) return;
-            
-            // Convert mouse position to normalized coordinates (-1 to 1)
-            const mouse = new THREE.Vector2();
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-            
-            // Raycasting to determine where the player is aiming
-            const raycaster = new THREE.Raycaster();
-            raycaster.setFromCamera(mouse, this.camera);
-            
-            // Calculate intersection with the ground plane
-            const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-            const targetPoint = new THREE.Vector3();
-            raycaster.ray.intersectPlane(groundPlane, targetPoint);
-            
-            // Rotate player to face the target point
-            this.player.lookAt(targetPoint);
-        });
-        
-        // Left click to shoot
-        window.addEventListener('mousedown', (event) => {
-            if (!this.isGameRunning || event.button !== 0) return;
-            
-            this.player.shoot();
-            const projectile = new Projectile(
-                this.scene,
-                this.player.position.clone(),
-                this.player.getDirection(),
-                true
-            );
-            this.playerProjectiles.push(projectile);
-        });
     }
     
-    spawnMinion() {
+    updateMousePosition(event) {
+        // Convert mouse position to normalized coordinates (-1 to 1)
+        this.mousePosition.x = (event.clientX / window.innerWidth) * 2 - 1;
+        this.mousePosition.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    }
+    
+    getMouseWorldPosition() {
+        // Create a ray from the camera through the mouse position
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(this.mousePosition, this.camera);
+        
+        // Calculate intersection with the ground plane
+        const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+        const targetPoint = new THREE.Vector3();
+        raycaster.ray.intersectPlane(groundPlane, targetPoint);
+        
+        return targetPoint;
+    }
+    
+    movePlayerToMousePosition() {
+        const targetPoint = this.getMouseWorldPosition();
+        this.player.moveToPosition(targetPoint);
+    }
+    
+    spawnMinionWave() {
         if (this.minions.length >= this.MINION_LIMIT) return;
         
-        // Random position at the edge of the arena
-        const side = Math.floor(Math.random() * 4); // 0-3 for N, E, S, W
-        const pos = new THREE.Vector3();
-        const halfSize = this.GROUND_SIZE / 2 - 5;
+        console.log("Spawning minion wave", this.minionWavesSpawned + 1);
         
-        switch (side) {
-            case 0: // North
-                pos.set(
-                    Math.random() * this.GROUND_SIZE - halfSize,
+        // Increase minion count every few waves
+        const minionsPerLane = this.minionsPerWave + Math.floor(this.minionWavesSpawned / 3);
+        
+        // Spawn minions in each lane
+        for (const lane of this.minionLanes) {
+            const spawnPoint = this.laneSpawnPoints[lane].clone();
+            const direction = this.laneDirections[lane].clone();
+            
+            // Add some randomness to spacing
+            for (let i = 0; i < minionsPerLane; i++) {
+                // Offset position based on position in wave and add slight randomness
+                const offset = i * 3;
+                const randomOffset = new THREE.Vector3(
+                    (Math.random() - 0.5) * 2,
                     0,
-                    -halfSize
+                    (Math.random() - 0.5) * 2
                 );
-                break;
-            case 1: // East
-                pos.set(
-                    halfSize,
-                    0,
-                    Math.random() * this.GROUND_SIZE - halfSize
+                
+                const minionPos = spawnPoint.clone().add(
+                    direction.clone().multiplyScalar(-offset)
+                ).add(randomOffset);
+                
+                // Create a minion
+                const minion = new Minion(
+                    this.scene,
+                    minionPos,
+                    direction.clone(),
+                    lane,
+                    10 + Math.floor(this.minionWavesSpawned / 2) * 5 // Scale HP with wave number
                 );
-                break;
-            case 2: // South
-                pos.set(
-                    Math.random() * this.GROUND_SIZE - halfSize,
-                    0,
-                    halfSize
-                );
-                break;
-            case 3: // West
-                pos.set(
-                    -halfSize,
-                    0,
-                    Math.random() * this.GROUND_SIZE - halfSize
-                );
-                break;
+                
+                this.minions.push(minion);
+            }
         }
         
-        const minion = new Minion(this.scene, pos);
-        this.minions.push(minion);
+        this.minionWavesSpawned++;
     }
     
     spawnEnemyProjectile() {
         if (this.enemyProjectiles.length >= this.PROJECTILE_LIMIT) return;
         
-        // Random position around the arena
-        const angle = Math.random() * Math.PI * 2;
-        const radius = this.GROUND_SIZE / 2 - 2;
-        const x = Math.cos(angle) * radius;
-        const z = Math.sin(angle) * radius;
-        const pos = new THREE.Vector3(x, 2, z);
+        // Randomly select a few minions to shoot projectiles
+        const shootingMinions = this.minions.filter(() => Math.random() < 0.05);
         
-        // Direction towards player with slight random deviation
-        const dir = this.player.position.clone().sub(pos).normalize();
-        const deviation = 0.2; // Adjust for difficulty
-        dir.x += (Math.random() - 0.5) * deviation;
-        dir.z += (Math.random() - 0.5) * deviation;
-        dir.normalize();
-        
-        const projectile = new Projectile(this.scene, pos, dir, false);
-        this.enemyProjectiles.push(projectile);
-    }
-    
-    spawnTarget() {
-        if (this.targets.length >= this.TARGET_LIMIT) return;
-        
-        // Random position in the arena
-        const halfSize = this.GROUND_SIZE / 2 - 10;
-        const x = (Math.random() * 2 - 1) * halfSize;
-        const z = (Math.random() * 2 - 1) * halfSize;
-        const pos = new THREE.Vector3(x, 1, z);
-        
-        const target = new Target(this.scene, pos);
-        this.targets.push(target);
+        for (const minion of shootingMinions) {
+            if (this.enemyProjectiles.length >= this.PROJECTILE_LIMIT) break;
+            
+            // Direction towards player with slight random deviation
+            const dir = this.player.position.clone().sub(minion.position).normalize();
+            const deviation = 0.2; // Adjust for difficulty
+            dir.x += (Math.random() - 0.5) * deviation;
+            dir.z += (Math.random() - 0.5) * deviation;
+            dir.normalize();
+            
+            const projectile = new Projectile(
+                this.scene,
+                minion.position.clone().add(new THREE.Vector3(0, 1, 0)),
+                dir,
+                false
+            );
+            this.enemyProjectiles.push(projectile);
+        }
     }
     
     onWindowResize() {
-        this.camera.aspect = window.innerWidth / window.innerHeight;
+        // Update orthographic camera on window resize
+        const aspect = window.innerWidth / window.innerHeight;
+        this.camera.left = window.innerWidth / -20;
+        this.camera.right = window.innerWidth / 20;
+        this.camera.top = window.innerHeight / 20;
+        this.camera.bottom = window.innerHeight / -20;
+        
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
     }
@@ -300,19 +480,26 @@ export class Game {
         const delta = this.clock.getDelta();
         const time = this.clock.getElapsedTime();
         
-        // Update player
+        // Update player (keyboard controls as fallback)
         this.player.update(delta, this.keys);
         this.keepInBounds(this.player);
         
-        // Update camera to follow player
-        const cameraOffset = new THREE.Vector3(0, 30, 30);
-        this.camera.position.copy(this.player.position).add(cameraOffset);
-        this.camera.lookAt(this.player.position);
+        // Spawn new minion wave
+        if (time - this.lastMinionWave > this.minionWaveTime) {
+            this.spawnMinionWave();
+            this.lastMinionWave = time;
+        }
+        
+        // Spawn enemy projectiles
+        if (time - this.lastProjectileSpawn > this.projectileSpawnRate) {
+            this.spawnEnemyProjectile();
+            this.lastProjectileSpawn = time;
+        }
         
         // Update minions
         for (let i = this.minions.length - 1; i >= 0; i--) {
             const minion = this.minions[i];
-            minion.update(delta, this.player.position);
+            minion.update(delta);
             this.keepInBounds(minion);
             
             // Check collision with player
@@ -324,6 +511,20 @@ export class Game {
                     this.gameOver();
                     return;
                 }
+            }
+            
+            // Remove dead minions
+            if (minion.health <= 0) {
+                // Check if player got the last hit
+                if (minion.wasHitByPlayer) {
+                    this.gold += 20;
+                    this.score += 10;
+                    this.ui.updateGold(this.gold);
+                    this.ui.updateScore(this.score);
+                }
+                
+                minion.remove();
+                this.minions.splice(i, 1);
             }
         }
         
@@ -346,16 +547,7 @@ export class Game {
                     projectile.remove();
                     this.playerProjectiles.splice(i, 1);
                     
-                    minion.takeDamage(25);
-                    if (minion.health <= 0) {
-                        minion.remove();
-                        this.minions.splice(j, 1);
-                        this.gold += 20;
-                        this.score += 10;
-                        this.ui.updateGold(this.gold);
-                        this.ui.updateScore(this.score);
-                    }
-                    
+                    minion.takeDamage(25, true); // Mark as hit by player
                     break;
                 }
             }
@@ -385,46 +577,6 @@ export class Game {
                     return;
                 }
             }
-        }
-        
-        // Update targets
-        for (let i = this.targets.length - 1; i >= 0; i--) {
-            const target = this.targets[i];
-            target.update(delta);
-            
-            // Check collisions with player projectiles
-            for (let j = this.playerProjectiles.length - 1; j >= 0; j--) {
-                const projectile = this.playerProjectiles[j];
-                
-                if (this.checkCollision(projectile, target)) {
-                    projectile.remove();
-                    this.playerProjectiles.splice(j, 1);
-                    
-                    target.remove();
-                    this.targets.splice(i, 1);
-                    this.gold += 30;
-                    this.score += 25;
-                    this.ui.updateGold(this.gold);
-                    this.ui.updateScore(this.score);
-                    break;
-                }
-            }
-        }
-        
-        // Spawn new enemies and projectiles
-        if (time - this.lastMinionSpawn > this.minionSpawnRate) {
-            this.spawnMinion();
-            this.lastMinionSpawn = time;
-        }
-        
-        if (time - this.lastProjectileSpawn > this.projectileSpawnRate) {
-            this.spawnEnemyProjectile();
-            this.lastProjectileSpawn = time;
-        }
-        
-        if (time - this.lastTargetSpawn > this.targetSpawnRate) {
-            this.spawnTarget();
-            this.lastTargetSpawn = time;
         }
         
         // Render
@@ -459,6 +611,8 @@ export class Game {
         this.health = 100;
         this.gold = 0;
         this.score = 0;
+        this.minionWavesSpawned = 0;
+        this.lastMinionWave = 0;
         this.isGameRunning = true;
         
         // Animation loop
@@ -493,12 +647,10 @@ export class Game {
         this.minions.forEach(minion => minion.remove());
         this.playerProjectiles.forEach(proj => proj.remove());
         this.enemyProjectiles.forEach(proj => proj.remove());
-        this.targets.forEach(target => target.remove());
         
         this.minions = [];
         this.playerProjectiles = [];
         this.enemyProjectiles = [];
-        this.targets = [];
         
         // Remove event listeners
         window.removeEventListener('resize', this.onWindowResize);

@@ -7,6 +7,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const ui = new UI();
     const keyBindings = new KeyBindings();
     let game = null;
+    
+    // Update UI with game instructions
+    const updateInstructions = () => {
+        const instructionsElement = document.getElementById('instructions');
+        if (instructionsElement) {
+            instructionsElement.innerHTML = `
+                <h3>Controls:</h3>
+                <p>Right click to move (like in LoL)</p>
+                <p>Left click to shoot</p>
+                <p>Keys ${keyBindings.getKeyName(keyBindings.getBinding('forward'))}-${keyBindings.getKeyName(keyBindings.getBinding('backward'))}-${keyBindings.getKeyName(keyBindings.getBinding('left'))}-${keyBindings.getKeyName(keyBindings.getBinding('right'))} can also be used</p>
+                
+                <h3>Objective:</h3>
+                <p>Last hit minions (red health bar) to earn gold and score points</p>
+                <p>Avoid enemy projectiles</p>
+                <p>Minion waves follow lanes like in League of Legends</p>
+            `;
+        }
+    };
 
     // Button to start the game
     const startButton = document.getElementById('start-button');
@@ -33,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     backButton.addEventListener('click', () => {
         document.getElementById('settings-screen').classList.add('hidden');
         document.getElementById('start-screen').classList.remove('hidden');
+        updateInstructions();
     });
 
     // Button to restart the game
@@ -77,4 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.addEventListener('keydown', keyListener, { once: true });
         });
     });
+    
+    // Call update instructions initially
+    updateInstructions();
 }); 
